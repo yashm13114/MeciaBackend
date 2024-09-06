@@ -1,9 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const Question = require('./models/questionSchema'); // Adjust path if necessary
+const authRouter = require('./routes/authRouter');
 
 const app = express();
+// Middleware
+app.use(express.json()); // Parses incoming JSON requests
+app.use(cors()); // Enables CORS for frontend requests
 app.use(bodyParser.json());
 
 // Connect to MongoDB
@@ -11,7 +16,20 @@ mongoose.connect('mongodb+srv://yashm13114:sh5VlCTZNnkShVVP@cluster0.lgqyj4p.mon
     useNewUrlParser: true,
     useUnifiedTopology: true
 });
-
+app.use('/auth', authRouter);
+app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    );
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST,,PUT, PATCH, DELETE");
+    next();
+});
+app.set({
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+});
 // Array of questions to insert
 const questions = [{
         questionNumber: 1,
@@ -20,7 +38,7 @@ const questions = [{
             a: 'Technology (e.g., gadgets, coding, AI)',
             b: 'Arts and Literature (e.g., painting, writing, music)',
             c: 'Science and Engineering (e.g., physics, engineering, biology)',
-            d: 'Business and Finance (e.g., entrepreneurship, stocks, marketing)',
+            d: 'Business and Finance (e.g., entrepreneurship, pesonal, marketing)',
             e: 'Social Sciences (e.g., psychology, history, sociology)',
             f: 'Health and Wellness (e.g., fitness, mental health, nutrition)',
             g: 'Other (Specify)',
@@ -161,7 +179,61 @@ const questions = [{
         }
     },
     {
-        questionNumber: 3,
+        questionNumber: 11,
+        questionText: 'Would you like to explore more about:',
+        options: {
+            a: 'Starting and running a business?',
+            b: 'How to manage personal finances and investments?',
+            c: 'Understanding economic trends and policies?',
+            d: 'The impact of marketing on consumer behavior?'
+        },
+        correctAnswer: null
+    },
+    {
+        questionNumber: 12,
+        questionText: 'Within Social Sciences, what specifically interests you?',
+        options: {
+            a: 'Psychology and Human Behavior',
+            b: 'Sociology and Social Issues',
+            c: 'History and Cultural Studies',
+            d: 'Political Science and Governance',
+            e: 'Anthropology and Human Evolution',
+            f: "I'm not sure"
+        },
+        correctAnswer: null,
+        followUpQuestions: {
+            f: null // Placeholder for "I'm not sure" follow-up
+        }
+    },
+    {
+        questionNumber: 13,
+        questionText: 'If "I\'m not sure" is selected, would you like to explore more about:',
+        options: {
+            a: 'Understanding why people behave the way they do?',
+            b: 'The history and development of societies?',
+            c: 'How political systems shape societies?',
+            d: 'The impact of culture on human development?'
+        },
+        correctAnswer: null
+    },
+    {
+        questionNumber: 14,
+        questionText: 'Within Health and Wellness, what specifically interests you?',
+        options: {
+            a: 'Physical Fitness and Exercise',
+            b: 'Nutrition and Diet',
+            c: 'Mental Health and Well-being',
+            d: 'Preventive Health and Lifestyle Medicine',
+            e: 'Alternative and Holistic Medicine',
+            f: "I'm not sure"
+        },
+        correctAnswer: null,
+        followUpQuestions: {
+            f: null // Placeholder for "I'm not sure" follow-up
+        }
+    },
+    {
+        questionNumber: 15,
         questionText: 'Would you like to explore more about:',
         options: {
             a: 'How to maintain a healthy lifestyle?',
@@ -174,7 +246,7 @@ const questions = [{
 
     // Question 4 (Determining Expertise Levels)
     {
-        questionNumber: 4,
+        questionNumber: 16,
         questionText: 'Would you prefer resources that are:',
         options: {
             a: 'Beginner-friendly',
@@ -190,7 +262,7 @@ const questions = [{
 
     // Follow-up for "I'm not sure" in Expertise Levels
     {
-        questionNumber: 5,
+        questionNumber: 17,
         questionText: 'How often do you engage with this interest?',
         options: {
             a: 'Daily',
@@ -204,7 +276,7 @@ const questions = [{
 
     // Aptitude Test
     {
-        questionNumber: 6,
+        questionNumber: 18,
         questionText: 'How comfortable do you feel when discussing or reading about [chosen topic]?',
         options: {
             a: 'Very comfortable—I can easily follow and contribute to conversations.',
@@ -215,7 +287,7 @@ const questions = [{
         correctAnswer: null
     },
     {
-        questionNumber: 7,
+        questionNumber: 19,
         questionText: 'How often do you seek out information or updates related to [chosen topic]?',
         options: {
             a: 'Regularly—I keep up with the latest news and developments.',
@@ -226,7 +298,7 @@ const questions = [{
         correctAnswer: null
     },
     {
-        questionNumber: 8,
+        questionNumber: 20,
         questionText: 'When you encounter a problem or challenge related to [chosen topic], how do you typically respond?',
         options: {
             a: 'I can usually solve it on my own or with minimal help.',
@@ -237,7 +309,7 @@ const questions = [{
         correctAnswer: null
     },
     {
-        questionNumber: 9,
+        questionNumber: 21,
         questionText: 'If you were asked to explain a concept within [chosen topic] to someone else, how confident would you feel?',
         options: {
             a: 'Very confident—I could explain it clearly and accurately.',
@@ -248,7 +320,7 @@ const questions = [{
         correctAnswer: null
     },
     {
-        questionNumber: 10,
+        questionNumber: 22,
         questionText: 'Have you ever completed any projects, assignments, or activities related to [chosen topic]?',
         options: {
             a: 'Yes, and they were successful.',
@@ -260,21 +332,56 @@ const questions = [{
     }
 ];
 
+// API to fetch questions by category
+app.get('/questions/:category', async(req, res) => {
+    const category = req.params.category;
+    const questions = await Question.find({ category });
+    res.json(questions);
+});
+
+// API to handle submission
+app.post('/submit-test', (req, res) => {
+    const { userId, answers } = req.body;
+    // Process the answers and save results
+    console.log('User ID:', userId, 'Answers:', answers);
+    res.json({ message: 'Test submitted successfully' });
+});
 // Function to insert questions into the database
 async function insertQuestions() {
     try {
-        await Question.insertMany(questions);
-        console.log('Questions inserted successfully');
+        // Fetch existing questions to avoid duplicates
+        const existingQuestions = await Question.find({ questionNumber: { $in: questions.map(q => q.questionNumber) } });
+
+        // Filter out questions that already exist
+        const newQuestions = questions.filter(q => !existingQuestions.some(eq => eq.questionNumber === q.questionNumber));
+
+        // Insert new questions
+        if (newQuestions.length > 0) {
+            await Question.insertMany(newQuestions);
+            console.log('New questions inserted successfully');
+        } else {
+            console.log('No new questions to insert');
+        }
     } catch (error) {
         console.error('Error inserting questions:', error);
     }
 }
 
+
 // Call the function to insert questions
 insertQuestions();
 
 // Endpoint to create a question
-app.post('/questions', async(req, res) => {
+// app.post('/questions', async(req, res) => {
+//     try {
+//         const question = new Question(req.body);
+//         await question.save();
+//         res.status(201).send(question);
+//     } catch (error) {
+//         res.status(400).send(error);
+//     }
+// });
+app.post('/aptitudeque12', async(req, res) => {
     try {
         const question = new Question(req.body);
         await question.save();
@@ -285,7 +392,7 @@ app.post('/questions', async(req, res) => {
 });
 
 // Endpoint to get follow-up question based on selected option
-app.post('/questions/:id/follow-up', async(req, res) => {
+app.post('/aptitudeque12/:id/follow-up', async(req, res) => {
     try {
         const question = await Question.findById(req.params.id);
         if (!question) {
@@ -306,7 +413,7 @@ app.post('/questions/:id/follow-up', async(req, res) => {
 });
 
 // Endpoint to get all questions
-app.get('/questions', async(req, res) => {
+app.get('/aptitudeque12', async(req, res) => {
     try {
         const questions = await Question.find({});
         res.status(200).send(questions);
@@ -316,7 +423,7 @@ app.get('/questions', async(req, res) => {
 });
 
 // Endpoint to get a specific question by ID
-app.get('/questions/:id', async(req, res) => {
+app.get('/aptitudeque12/:id', async(req, res) => {
     try {
         const question = await Question.findById(req.params.id);
         if (!question) {

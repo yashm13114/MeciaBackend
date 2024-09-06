@@ -1,12 +1,18 @@
 const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema({
-    questionNumber: { type: Number, required: true },
-    questionText: { type: String, required: true },
-    options: { type: Map, of: String },
-    correctAnswer: { type: String, default: null },
-    followUpQuestions: { type: Map, of: mongoose.Schema.Types.ObjectId }
+    questionNumber: Number,
+    questionText: String,
+    options: {
+        type: Map,
+        of: String
+    },
+    correctAnswer: String,
+    followUpQuestions: {
+        type: Map,
+        of: mongoose.Schema.Types.ObjectId
+    },
+    category: String // New field for question category
 });
 
-const Question = mongoose.model('Question', questionSchema);
-module.exports = Question;
+module.exports = mongoose.model('aptitudeque12', questionSchema);
